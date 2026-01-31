@@ -109,17 +109,18 @@ if __name__ == "__main__":
     right_x = right_df['x'].to_numpy()
     right_y = right_df['y'].to_numpy()
     
+    # mid_x, mid_y = find_midline(left_x, left_y, right_x, right_y)
+    mid_x, mid_y, triangles = basic_triangulation(left_x, left_y, right_x, right_y)
+    
     plt.figure(figsize=(10,6))
     plt.plot(left_x, left_y, color='blue', marker='o')
     plt.plot(right_x, right_y, color='gold', marker='o')
-    
-    # mid_x, mid_y = find_midline(left_x, left_y, right_x, right_y)
-    mid_x, mid_y, triangles = basic_triangulation(left_x, left_y, right_x, right_y)
     plt.plot(mid_x, mid_y, color='green', marker='x')
+    plt.grid(True)
     
     ax = plt.gca()
+    
     poly_collection = PolyCollection(triangles, facecolors=(1,0,0,0), edgecolors='black', linewidths=1)
     ax.add_collection(poly_collection)
     
-    plt.grid(True)
     plt.show()
