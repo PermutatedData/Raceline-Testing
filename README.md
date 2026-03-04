@@ -45,3 +45,8 @@ start racetrack_drawer/racetrack_drawer.html      # Windows
 ```bash
 python racetest.py
 ```
+
+### Description
+Racetrack test with Delaunay algorithm as main focus
+
+Assumes perceptions data is completely unordered, ordering output with some CDKtree thing
