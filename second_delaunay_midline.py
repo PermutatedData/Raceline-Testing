@@ -1,163 +1,34 @@
-EPS = 1e-9
+from helpers import *
 
-    
-class Triangle:
+# Annoying note: no standardized point format: either tuple or list
+# Edges may also similarly be unstandardized
 
-    def __init__(self, a, b, c):
-        self.v = [a,b,c]
-
-    def edge(self,i):
-        return (self.v[i], self.v[(i+1)%3])
-
-    def edges(self):
-        return [
-            (self.v[0],self.v[1]),
-            (self.v[1],self.v[2]),
-            (self.v[2],self.v[0])
-        ]
-        
-
-def is_triangle_edge(t, edge):
-    """
-    Checks if edge is an edge of the triangle
-    Operation: checks if edge or reversed edge is in triangle edges
-
-    Args:
-        t (Triangle): triangle
-        edge (list): list of two points
-    """
-    
-    return edge in t.edges or edge[::-1] in t.edges
-
-
-# ---------------------------------------------------------
-# Geometry
-# ---------------------------------------------------------
-
-def orient(a, b, c):
-    """ 
-    Calculates |AB x AC|
-
-    Args:
-        a (list): x, y pair
-        b (list): x, y pair
-        c (list): x, y pair
-
-    Returns:
-        int: |AB x AC|. Positive if CCW, negative if CW
-    """
-    
-    # For my own sake: AB = b - a, AC = c - a
-    # Then, 2D cross product formula
-    
-    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
-
-
-def in_circumcircle(a, b, c, point):
-    """
-    Calculates determinant of matrix to check if point is in triangle's circumcircle
-    Big-brain technique. For explanation, see: https://ianthehenry.com/posts/delaunay/
-    Assumes points are put counterclockwise
-
-    Args:
-        a (list): triangle x, y pair
-        b (list): triangle x, y pair
-        c (list): triangle x, y pair
-        point (list): x, y pair
-
-    Returns:
-        bool: whether or not point is in circumcircle
-    """
-    ax, ay = a[0] - point[0], a[1] - point[1]
-    bx, by = b[0] - point[0], b[1] - point[1]
-    cx, cy = c[0] - point[0], c[1] - point[1]
-
-    det = (
-        (ax*ax + ay*ay)*(bx*cy - by*cx)
-        - (bx*bx + by*by)*(ax*cy - ay*cx)
-        + (cx*cx + cy*cy)*(ax*by - ay*bx)
-    )
-    return det > 0
-
-
-def segments_intersect(p1, p2, p3, p4):
-    """
-    Another bit of comp geometry magic
-    
-    Args:
-        p1 (list): segment 1 endpoint
-        p2 (list): segment 1 endpoint
-        p3 (list): segment 2 endpoint
-        p4 (list): segment 2 endpoint
-    """
-    o1 = orient(p1,p2,p3)
-    o2 = orient(p1,p2,p4)
-    o3 = orient(p3,p4,p1)
-    o4 = orient(p3,p4,p2)
-    return o1*o2 < 0 and o3*o4 < 0
-
-
-# ---------------------------------------------------------
-# Polygon utilities
-# ---------------------------------------------------------
-
-def polygon_area(poly):
-    area = 0
-    for i in range(len(poly)):
-        x1, y1 = poly[i]
-        x2, y2 = poly[(i + 1) % len(poly)]
-        area += x1*y2 - x2*y1
-    return area/2
-
-
-def ensure_ccw(poly):
-    if polygon_area(poly) < 0:
-        return poly[::-1]
-    return poly
-
-
-# ---------------------------------------------------------
-# Super triangle
-# ---------------------------------------------------------
-
-def super_triangle(points):
-
-    minx = min(p[0] for p in points)
-    miny = min(p[1] for p in points)
-    maxx = max(p[0] for p in points)
-    maxy = max(p[1] for p in points)
-
-    dx = maxx - minx
-    dy = maxy - miny
-    d = max(dx, dy) * 10
-
-    midx = (minx + maxx) / 2
-    midy = (miny + maxy) / 2
-
-    return [
-        (midx - d,midy - d),
-        (midx, midy + d),
-        (midx + d,midy - d)
-    ]
+# Understanding this will be a personal project for later
 
 
 # ---------------------------------------------------------
 # Delaunay triangulation (Bowyer-Watson)
 # ---------------------------------------------------------
 
+# Degenerate triangles: when triangle forms a line. Therefore, deleting them is the same as deleting a line in a list of triangles: just cleaning up data
+
 def delaunay(points):
 
-    st = super_triangle(points)
+    st_vertices = super_triangle(points)
+    st = Triangle(st_vertices[0], st_vertices[1], st_vertices[2])
+    
+    print(is_triangle_CCW(st))
 
-    triangles=[Triangle(st[0],st[1],st[2])]
+    triangles = [st]
 
-    for p in points:
+    for point in points:
 
-        bad=[]
+        bad=[] 
 
         for t in triangles:
             a,b,c = t.v
-            if in_circumcircle(a,b,c,p):
+            
+            if in_circumcircle(t, point):
                 bad.append(t)
 
         boundary=[]
@@ -183,9 +54,17 @@ def delaunay(points):
             triangles.remove(t)
 
         for e in boundary:
-            triangles.append(Triangle(e[0],e[1],p))
+            t_new = Triangle(e[0], e[1], point)
+            
+            if not is_degenerate(t_new):
+                triangles.append(Triangle(e[0], e[1], point))
+                
+        print("triangles before insert:", len(triangles))
+        print("bad:", len(bad))
+        print("boundary:", len(boundary))
 
-    triangles = [t for t in triangles if not any(v in st for v in t.v)]
+    # Probably the super triangle deletion step?
+    triangles = [t for t in triangles if not any(v in st.v for v in t.v)]
 
     return triangles
 
@@ -195,23 +74,21 @@ def delaunay(points):
 # ---------------------------------------------------------
 
 def edge_exists(triangles, a, b):
-
     for t in triangles:
-        for e in t.edges():
-            if (e[0] == a and e[1] == b) or (e[0] == b and e[1] == a):
-                return True
+        if is_triangle_edge(t, (a, b)):
+            return True
 
     return False
 
 
-def flip_edge(triangles,edge):
+def flip_edge(triangles: list, edge):
 
     t1=None
     t2=None
 
     for t in triangles:
         for e in t.edges():
-            if e==edge or e==edge[::-1]:
+            if edges_equal(e, edge):
                 if t1 is None:
                     t1=t
                 else:
@@ -221,7 +98,7 @@ def flip_edge(triangles,edge):
     if not t1 or not t2:
         return
 
-    a,b=edge
+    a, b = edge
 
     c=next(v for v in t1.v if v not in edge)
     d=next(v for v in t2.v if v not in edge)
@@ -238,17 +115,18 @@ def flip_edge(triangles,edge):
 # ---------------------------------------------------------
 
 def enforce_constraints(triangles,constraints):
-
-    changed=True
+    changed = True
 
     while changed:
-
         changed=False
 
-        for a,b in constraints:
-
+        for a, b in constraints:
+            
             if edge_exists(triangles,a,b):
+                print("edge is part of constraint")
                 continue
+
+            print("does this ever run")
 
             for t in triangles:
 
@@ -276,9 +154,10 @@ def build_fsae_cdt(left_sorted, right_sorted):
 
     constraints=[]
 
+    # Handling list-to-tuple is annoying as f
     for i in range(len(polygon)):
         constraints.append(
-            (polygon[i],polygon[(i+1)%len(polygon)])
+            (tuple(polygon[i]), tuple(polygon[(i + 1) % len(polygon)]))
         )
 
     tris = delaunay(polygon)
@@ -294,6 +173,8 @@ def build_fsae_cdt(left_sorted, right_sorted):
 def extract_centerline(triangles,left_set,right_set):
 
     centers=[]
+
+    print("reached 1")
 
     for t in triangles:
 
@@ -313,7 +194,7 @@ def extract_centerline(triangles,left_set,right_set):
 # Full pipeline
 # ---------------------------------------------------------
 
-def fsae_raceline(left_cones_sorted: list, right_cones_sorted: list):
+def midline(left_cones_sorted: list, right_cones_sorted: list):
     """
     Constructs midline with Delaunay
 
@@ -324,9 +205,12 @@ def fsae_raceline(left_cones_sorted: list, right_cones_sorted: list):
     Returns:
         list: centerline
     """
-    tris,left,right = build_fsae_cdt(left_cones_sorted, right_cones_sorted)
+    left_cones_normalized = [tuple(p) for p in left_cones_sorted]
+    right_cones_normalized = [tuple(p) for p in right_cones_sorted]
+    
+    tris,left,right = build_fsae_cdt(left_cones_normalized, right_cones_normalized)
 
     # do sets really do anything here
     centerline = extract_centerline(tris, left, right)
 
-    return centerline
+    return centerline, tris
