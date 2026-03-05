@@ -17,8 +17,6 @@ def delaunay(points):
     st_vertices = super_triangle(points)
     st = Triangle(st_vertices[0], st_vertices[1], st_vertices[2])
     
-    print(is_triangle_CCW(st))
-
     triangles = [st]
 
     for point in points:

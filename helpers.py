@@ -2,6 +2,10 @@ MIN_VALID_AREA = 1e-9
 
 # Handling of list vs tuple issues is inconsistent at best
 
+# ---------------------------------------------------------
+# List/tuple handling
+# ---------------------------------------------------------
+
 def points_equal(a, b):
     return a[0] == b[0] and a[1] == b[1]
 
@@ -13,10 +17,14 @@ def edges_equal(e1, e2):
     return (points_equal(e1[0], e2[0]) and points_equal(e1[1], e2[1])) or (points_equal(e1[0], e2[1]) and points_equal(e1[1], e2[0]))
 
 
+# ---------------------------------------------------------
+# Triangle class
+# ---------------------------------------------------------
+
 class Triangle:
     """
     Simple collection of 3 points
-    Points automatically converted into tuples, CW/CCW orientation not considered
+    Automatically enforces CCW orientation and checks for degeneracy
     """
 
     def __init__(self, a, b, c):
@@ -27,7 +35,8 @@ class Triangle:
             self.v = (a, c, b)
             print("reforce")
 
-        self.v = (a, b, c)
+        else:
+            self.v = (a, b, c)
 
     def edges(self):
         return [
@@ -53,6 +62,7 @@ def is_triangle_edge(t: Triangle, edge):
         
     return False
 
+
 # ---------------------------------------------------------
 # Geometry
 # ---------------------------------------------------------
@@ -76,53 +86,6 @@ def orient(a, b, c):
     return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 
 
-def is_degenerate(t: Triangle):
-    return abs(orient(t.v[0], t.v[1], t.v[2])) < MIN_VALID_AREA
-
-
-def is_triangle_CCW(t: Triangle):
-    """
-    Checks if points in triangle are listed in CCW order
-    Theoretically, points should only be CW or CCW; if not, something has gone seriously wrong
-
-    Args:
-        t (Triangle)
-    """
-        
-    return orient(t.v[0], t.v[1], t.v[2]) > 0
-
-def in_circumcircle(t: Triangle, point):
-    """
-    Calculates determinant of matrix to check if point is in triangle's circumcircle
-    Big-brain technique. For explanation, see: https://ianthehenry.com/posts/delaunay/
-    Algorithm assumes points are put counterclockwise, so extra check is added
-
-    Args:
-        t (Triangle): triangle
-        point (list): x, y pair
-
-    Returns:
-        bool: whether or not point is in circumcircle
-    """
-    a, b, c = t.v[0], t.v[1], t.v[2]
-    
-    ax, ay = a[0] - point[0], a[1] - point[1]
-    bx, by = b[0] - point[0], b[1] - point[1]
-    cx, cy = c[0] - point[0], c[1] - point[1]
-
-    det = (
-        (ax*ax + ay*ay)*(bx*cy - by*cx)
-        - (bx*bx + by*by)*(ax*cy - ay*cx)
-        + (cx*cx + cy*cy)*(ax*by - ay*bx)
-    )
-    
-    if is_triangle_CCW(t):
-        return det > 0
-    
-    print("bug")
-    return det < 0
-
-
 def segments_intersect(p1, p2, p3, p4):
     """
     Another bit of comp geometry magic
@@ -143,6 +106,56 @@ def segments_intersect(p1, p2, p3, p4):
     o4 = orient(p3,p4,p2)
     
     return o1 * o2 < 0 and o3 * o4 < 0
+
+
+def is_degenerate(t: Triangle):
+    return abs(orient(t.v[0], t.v[1], t.v[2])) < MIN_VALID_AREA
+
+
+def is_triangle_CCW(t: Triangle):
+    """
+    Checks if points in triangle are listed in CCW order
+    Theoretically, points should only be CW or CCW; if not, something has gone seriously wrong
+    Because Triangle should force CCW orientation, this should never return False 
+
+    Args:
+        t (Triangle)
+    """
+    if not is_triangle_CCW(t):
+        raise ValueError("Triangle is not CCW")
+        
+    return orient(t.v[0], t.v[1], t.v[2]) > 0
+
+
+def in_circumcircle(t: Triangle, point):
+    """
+    Calculates determinant of matrix to check if point is in triangle's circumcircle
+    Big-brain technique. For explanation, see: https://ianthehenry.com/posts/delaunay/
+    Algorithm assumes points are put counterclockwise, so extra check is added
+
+    Args:
+        t (Triangle): triangle
+        point (list): x, y pair
+
+    Returns:
+        bool: whether or not point is in circumcircle
+    """
+    if not is_triangle_CCW(t):
+        raise ValueError("Triangle is not CCW")
+    
+    a, b, c = t.v[0], t.v[1], t.v[2]
+    
+    ax, ay = a[0] - point[0], a[1] - point[1]
+    bx, by = b[0] - point[0], b[1] - point[1]
+    cx, cy = c[0] - point[0], c[1] - point[1]
+
+    det = (
+        (ax*ax + ay*ay)*(bx*cy - by*cx)
+        - (bx*bx + by*by)*(ax*cy - ay*cx)
+        + (cx*cx + cy*cy)*(ax*by - ay*bx)
+    )
+            
+    return det > 0
 
 
 # ---------------------------------------------------------
