@@ -49,4 +49,4 @@ python racetest.py
 ### Description
 Racetrack test with Delaunay algorithm as main focus
 
-Assumes perceptions data is completely unordered, ordering output with some CDKtree thing
+Assumes perceptions data is completely unordered

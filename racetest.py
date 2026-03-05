@@ -177,7 +177,8 @@ if __name__ == "__main__":
     # x_fine, y_fine = cubic_spline(mid)
     
     # delaunay_midline, delaunay_triangles = first_delaunay_midline.midline(left, right)
-    delaunay_midline, delaunay_triangles = second_delaunay_midline.fsae_raceline(left.tolist(), right.tolist())
+    delaunay_midline, delaunay_triangles = map(np.array, second_delaunay_midline.midline(left.tolist(), right.tolist())) # Ensure everything is in numpy arrays
+    
     delaunay_midline_x = delaunay_midline[:,0]
     delaunay_midline_y = delaunay_midline[:,1]
     

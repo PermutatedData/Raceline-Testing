@@ -96,8 +96,7 @@ def midline(left_points, right_points,
 
     return ordered, np.array(triangles)
 
-# is this even necessary?
-# efficiency is probably awful
+# Likely uses cKDTree's own sorting algorithm to sort points. Probably super inefficient
 def order_points(points):
     """
     Order points into continuous loop using greedy nearest neighbor.

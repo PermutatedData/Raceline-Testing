@@ -1,6 +1,9 @@
 import numpy
+import math
 
-def sort_points_nearest(points):
+# TODO: projection sorting, something more advanced if necessary. Centroid angle sorting likely not good enough for FSAE?
+
+def sort_points_nearest(points) -> numpy.ndarray:
     """
     Nearest neighbor walk
 
@@ -25,7 +28,7 @@ def sort_points_nearest(points):
     current = start
 
     while points:
-        next_pt = min(points, key=lambda p: (p[0]-current[0])**2 + (p[1]-current[1])**2)
+        next_pt = min(points, key=lambda p: math.dist(p, current))
         ordered.append(next_pt)
         points.remove(next_pt)
         current = next_pt
