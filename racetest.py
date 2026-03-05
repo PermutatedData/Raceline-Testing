@@ -4,13 +4,16 @@ import numpy as np
 import pandas as pd
 import triangle
 
-import fast_delaunay_midline
+import first_delaunay_midline
+import second_delaunay_midline
+
+import polygon_constructor
 
 from scipy.interpolate import CubicSpline
 
 INPUT_FILE_NAME = "hairpin_uneven_track_width.csv" 
 
-# def insert function here lmao
+UNORDERED_INPUTS = True
 
 def find_midline(left_x, left_y, right_x, right_y, num_midpoints=None):
     """
@@ -154,8 +157,15 @@ if __name__ == "__main__":
     right_x = right_df['x'].to_numpy()
     right_y = right_df['y'].to_numpy()
     
-    left = np.column_stack((left_x, left_y))
+    left = np.column_stack((left_x, left_y)) # (left_x, left_y) is not a tuple but an NDarray infuriatingly
     right = np.column_stack((right_x, right_y))
+    
+    if UNORDERED_INPUTS:
+        left_unsorted = np.random.permutation(left)
+        right_unsorted = np.random.permutation(right)
+        
+        left = polygon_constructor.sort_points_nearest(left_unsorted)
+        right = polygon_constructor.sort_points_nearest(right_unsorted)
     
     # Old midline
     # mid_x, mid_y = find_midline(left_x, left_y, right_x, right_y)
@@ -166,13 +176,14 @@ if __name__ == "__main__":
     
     # x_fine, y_fine = cubic_spline(mid)
     
-    delaunay_midline, delaunay_triangles = fast_delaunay_midline.compute_midline(left, right)
+    # delaunay_midline, delaunay_triangles = first_delaunay_midline.midline(left, right)
+    delaunay_midline, delaunay_triangles = second_delaunay_midline.fsae_raceline(left.tolist(), right.tolist())
     delaunay_midline_x = delaunay_midline[:,0]
     delaunay_midline_y = delaunay_midline[:,1]
     
     delaunay_poly_collection = PolyCollection(delaunay_triangles, facecolors=(1,0,0,0), edgecolors='black', linewidths=1)
     
-    x_fine_2, y_fine_2 = cubic_spline(delaunay_midline)
+    cubic_spline_x_2, cubic_spline_y_2 = cubic_spline(delaunay_midline)
     
     
     # Matplotlib stuff
@@ -181,6 +192,8 @@ if __name__ == "__main__":
     
     plt.plot(left_x, left_y, color='blue', marker='o')
     plt.plot(right_x, right_y, color='gold', marker='o')
+    
+    plt.plot(left[:,0], left[:, 1], color="red")
     
     ax = plt.gca()
     ax.set_aspect("equal")
@@ -195,7 +208,7 @@ if __name__ == "__main__":
     plt.plot(delaunay_midline_x, delaunay_midline_y, color='forestgreen', marker='x')
     ax.add_collection(delaunay_poly_collection)
 
-    plt.plot(x_fine_2, y_fine_2, '-', label="Spline 2")
+    plt.plot(cubic_spline_x_2, cubic_spline_y_2, '-', label="Spline 2")
     
     plt.legend()
     

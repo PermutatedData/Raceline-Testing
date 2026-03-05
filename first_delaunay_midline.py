@@ -6,7 +6,7 @@ from scipy.interpolate import splprep, splev
 import matplotlib.pyplot as plt
 
 
-def compute_midline(left_points, right_points, 
+def midline(left_points, right_points, 
                     max_width=None,
                     smooth=False,
                     spline_s=0.0,
@@ -97,6 +97,7 @@ def compute_midline(left_points, right_points,
     return ordered, np.array(triangles)
 
 # is this even necessary?
+# efficiency is probably awful
 def order_points(points):
     """
     Order points into continuous loop using greedy nearest neighbor.
