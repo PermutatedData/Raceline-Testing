@@ -1,40 +1,97 @@
 from helpers import *
 
-
-def delaunay(points):
+def bowyer_watson(points):
     st_vertices = super_triangle(points)
-    super_tri = Triangle(st_vertices[0], st_vertices[1], st_vertices[2])
-
-    triangles = [super_tri]
+    st = Triangle(st_vertices[0], st_vertices[1], st_vertices[2])
+    
+    triangles = [st]
 
     for p in points:
-        bad = []
-        circles = {}
 
-        for t in triangles:
-            c = circumcircle(t)
-            circles[t] = c
-            if in_circle(p, c):
-                bad.append(t)
+        bad = []
+
+        for tri in triangles:
+            if in_circumcircle(tri, p):
+                bad.append(tri)
+
+        edge_count = {}
+
+        for tri in bad:
+            for e in tri.edges():
+                k = frozenset(e)
+                edge_count[k] = edge_count.get(k,0) + 1
 
         polygon = []
-        for t in bad:
-            for edge in [(t[0], t[1]), (t[1], t[2]), (t[2], t[0])]:
-                if edge in polygon:
-                    polygon.remove(edge)
-                else:
-                    polygon.append(edge)
 
-        for t in bad:
-            triangles.remove(t)
+        for e, count in edge_count.items():
+            if count == 1:
+                polygon.append(tuple(e))
 
-        for edge in polygon:
-            triangles.append((edge[0], edge[1], p))
+        for tri in bad:
+            triangles.remove(tri)
+
+        for e in polygon:
+            a,b = e
+            triangles.append(Triangle(a, b, p))
 
     result = []
-    for t in triangles:
-        if any(v in super_tri for v in t):
+
+    for tri in triangles:
+        if any(v in st for v in tri):
             continue
-        result.append(t)
+        result.append(tri)
 
     return result
+
+
+def recover_edge(triangles, edge):
+    a, b = edge
+
+    changed = True
+
+    while changed:
+        changed = False
+
+        for t1 in triangles:
+            for t2 in triangles:
+
+                if t1 == t2:
+                    continue
+
+                e1 = frozenset(t1.edges())
+                e2 = frozenset(t2.edges())
+
+                shared = e1 & e2
+
+                if len(shared) != 1:
+                    continue
+
+                shared_edge = list(shared)[0]
+
+                if not segments_intersect(*shared_edge,a,b):
+                    continue
+
+                c = [v for v in t1 if v not in shared_edge][0]
+                d = [v for v in t2 if v not in shared_edge][0]
+
+                triangles.remove(t1)
+                triangles.remove(t2)
+
+                triangles.append(Triangle(c,a,b))
+                triangles.append(Triangle(d,a,b))
+
+                changed = True
+                break
+
+            if changed:
+                break
+
+
+def constrained_delaunay(points, constraints):
+
+    triangles = bowyer_watson(points)
+
+    for edge in constraints:
+        recover_edge(triangles, edge)
+
+    return triangles
