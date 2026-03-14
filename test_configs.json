@@ -1,0 +1,42 @@
+[
+    {
+        "name": "ellipse_track",
+        "position": [0, 0],
+        "heading": 0
+    },  
+    {
+        "name": "hairpin_1",
+        "position": [0, 0],
+        "heading": 0
+    },
+    {
+        "name": "hairpin_2",
+        "position": [0, 0],
+        "heading": 0
+    },
+    {
+        "name": "hairpin_uneven_track_width_color_swapped",
+        "position": [26.69, 17.25],
+        "heading": 0
+    },
+    {
+        "name": "hairpin_uneven_track_width",
+        "position": [24, 28],
+        "heading": 0
+    },
+    {
+        "name": "scuffed_straight_1",
+        "position": [0, 0],
+        "heading": 0
+    },
+    {
+        "name": "test_track",
+        "position": [0, 0],
+        "heading": 0
+    },
+    {
+        "name": "yeet",
+        "position": [0, 0],
+        "heading": 0
+    }
+]

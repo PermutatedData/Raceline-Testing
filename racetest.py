@@ -1,19 +1,35 @@
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
+
 import numpy as np
 import pandas as pd
 import triangle
+import json
+
+from scipy.interpolate import CubicSpline
 
 import first_delaunay_midline
 import second_delaunay_midline
 
 import polygon_constructor
 
-from scipy.interpolate import CubicSpline
-
-INPUT_FILE_NAME = "hairpin_uneven_track_width.csv" 
+# Starts from 1
+TEST_CASE = 4
 
 UNORDERED_INPUTS = True
+
+def get_data_for_test_case():
+    data = {}
+    
+    try:
+        with open('test_configs.json', 'r') as file:
+            data = json.load(file)
+        
+    except FileNotFoundError:
+        print("Error: The file 'test_configs.json' was not found.")
+    
+    return data[TEST_CASE - 1]
+
 
 def find_midline(left_x, left_y, right_x, right_y, num_midpoints=None):
     """
@@ -147,7 +163,12 @@ def cubic_spline(points):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('./tracks/' + INPUT_FILE_NAME)
+    test_case_data = get_data_for_test_case()
+    file_name = test_case_data["name"]
+    car_pos = test_case_data["position"]
+    heading_angle = np.deg2rad(test_case_data["heading"])
+    
+    df = pd.read_csv('./tracks/' + file_name + '.csv')
 
     left_df = df[df['type'] == 'left']
     right_df = df[df['type'] == 'right']
@@ -164,8 +185,8 @@ if __name__ == "__main__":
         left_unsorted = np.random.permutation(left)
         right_unsorted = np.random.permutation(right)
         
-        left = polygon_constructor.order_boundary_weighted(left_unsorted, (24, 28), weight_angle=1, max_spacing=20)
-        right = polygon_constructor.order_boundary_weighted(right_unsorted, (24, 28), weight_angle=1, max_spacing=20)
+        left = polygon_constructor.order_boundary_weighted(left_unsorted, car_pos, car_heading=heading_angle, weight_angle=1, max_spacing=30)
+        right = polygon_constructor.order_boundary_weighted(right_unsorted, car_pos, car_heading=heading_angle, weight_angle=1, max_spacing=30)
     
     # Old midline
     # mid_x, mid_y = find_midline(left_x, left_y, right_x, right_y)
@@ -193,6 +214,8 @@ if __name__ == "__main__":
     
     plt.plot(left_x, left_y, color='blue', marker='o')
     plt.plot(right_x, right_y, color='gold', marker='o')
+    
+    plt.arrow(car_pos[0], car_pos[1], 2 * np.cos(heading_angle), 2 * np.sin(heading_angle), color="red", linewidth=2, head_width=1)
     
     plt.plot(left[:,0], left[:, 1], color="red")
     plt.plot(right[:,0], right[:, 1], color="red")
